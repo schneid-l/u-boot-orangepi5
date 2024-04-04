@@ -8,6 +8,7 @@ on:
 env:
   U_BOOT_VERSION: v2024.04
   BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+  SOURCE_DATE_EPOCH: 1712055538
 
 jobs:
   build:
@@ -48,7 +49,7 @@ jobs:
         with:
           save-always: true
           path: u-boot-build
-          key: u-boot-build-${{ github.ref_name }}-${{ matrix.board.name }}
+          key: u-boot-${{ env.U_BOOT_VERSION }}-${{ matrix.board.name }}-${{ github.ref_name }}-${{ hashFiles('Dockerfile') }}-build
 
       - name: Inject U-Boot build cache into buildx
         uses: reproducible-containers/buildkit-cache-dance@v2.1.4
@@ -56,10 +57,6 @@ jobs:
           cache-source: u-boot-build
           cache-target: /u-boot/build-${{ matrix.board.name }}
           skip-extraction: ${{ steps.cache-u-boot-build.outputs.cache-hit }}
-
-      - name: Get commit date
-        id: commit-date
-        run: echo SOURCE_DATE_EPOCH=$(git log $(git rev-list --max-parents=0 HEAD) --pretty=%ct) >> $GITHUB_OUTPUT
 
       - name: Build U-Boot for ${{ matrix.board.title }}
         uses: docker/build-push-action@v3
@@ -70,7 +67,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.board.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.board.name }}
           build-args: |
-            SOURCE_DATE_EPOCH=${{ steps.commit-date.outputs.SOURCE_DATE_EPOCH }}
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
             BOARD=${{ matrix.board.name }}
             DEFCONFIG=${{ matrix.board.defconfig }}
             U_BOOT_VERSION=${{ env.U_BOOT_VERSION }}
