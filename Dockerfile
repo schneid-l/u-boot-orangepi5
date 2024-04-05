@@ -93,7 +93,6 @@ ENV ARCH=arm64
 
 WORKDIR /u-boot/src
 RUN --mount=type=cache,target=/u-boot/build \
-    make O=/u-boot/build -j$(nproc) mrproper && \
     make O=/u-boot/build -j$(nproc) ${DEFCONFIG}_defconfig && \
     make O=/u-boot/build -j$(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto"
 
