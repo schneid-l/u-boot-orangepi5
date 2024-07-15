@@ -58,7 +58,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
-ARG U_BOOT_VERSION=v2024.04
+ARG U_BOOT_VERSION=v2024.07
 ARG U_BOOT_SOURCE=https://source.denx.de/u-boot/u-boot/-/archive/${U_BOOT_VERSION}/u-boot-${U_BOOT_VERSION}.tar.gz
 
 RUN mkdir -p /u-boot && \
@@ -82,7 +82,7 @@ ARG SOURCE_DATE_EPOCH
 COPY --from=u-boot-downloader /u-boot /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
 
-ARG U_BOOT_VERSION=v2024.04
+ARG U_BOOT_VERSION=v2024.07
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${U_BOOT_VERSION}-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
@@ -105,7 +105,7 @@ FROM scratch AS u-boot
 
 ARG SOURCE_DATE_EPOCH
 
-ARG U_BOOT_VERSION=v2024.04
+ARG U_BOOT_VERSION=v2024.07
 ARG BOARD=orangepi5
 ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
 ARG IMAGE_TITLE="Orange Pi 5 U-Boot ${U_BOOT_VERSION}"
@@ -115,12 +115,12 @@ ARG IMAGE_AUTHORS="Louis S. <louis@schne.id>"
 ARG IMAGE_VENDOR="Denx Software Engineering"
 ARG IMAGE_VERSION=$U_BOOT_VERSION
 
-LABEL org.opencontainers.image.name $IMAGE_NAME
-LABEL org.opencontainers.image.title $IMAGE_TITLE
-LABEL org.opencontainers.image.description $IMAGE_DESCRIPTION
-LABEL org.opencontainers.image.source $IMAGE_SOURCE
-LABEL org.opencontainers.image.authors $IMAGE_AUTHORS
-LABEL org.opencontainers.image.vendor $IMAGE_VENDOR
-LABEL org.opencontainers.image.version $IMAGE_VERSION
+LABEL org.opencontainers.image.name=$IMAGE_NAME
+LABEL org.opencontainers.image.title=$IMAGE_TITLE
+LABEL org.opencontainers.image.description=$IMAGE_DESCRIPTION
+LABEL org.opencontainers.image.source=$IMAGE_SOURCE
+LABEL org.opencontainers.image.authors=$IMAGE_AUTHORS
+LABEL org.opencontainers.image.vendor=$IMAGE_VENDOR
+LABEL org.opencontainers.image.version=$IMAGE_VERSION
 
 COPY --from=u-boot-builder /u-boot/out/* /

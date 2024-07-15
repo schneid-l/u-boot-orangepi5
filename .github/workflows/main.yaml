@@ -6,7 +6,6 @@ on:
     tags:
       - v*
 env:
-  U_BOOT_VERSION: v2024.04
   BUILDX_NO_DEFAULT_ATTESTATIONS: 1
   SOURCE_DATE_EPOCH: 1712055538
 
@@ -64,13 +63,10 @@ jobs:
           context: .
           file: ./Dockerfile
           outputs: type=local,dest=.
-          cache-from: type=gha,scope=${{ matrix.board.name }},url=$ACTIONS_CACHE_URL,token=$ACTIONS_RUNTIME_TOKEN
-          cache-to: type=gha,mode=max,scope=${{ matrix.board.name }},url=$ACTIONS_CACHE_URL,token=$ACTIONS_RUNTIME_TOKEN
           build-args: |
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
             BOARD=${{ matrix.board.name }}
             DEFCONFIG=${{ matrix.board.defconfig }}
-            U_BOOT_VERSION=${{ env.U_BOOT_VERSION }}
           push: false
 
       - name: Push artifacts
