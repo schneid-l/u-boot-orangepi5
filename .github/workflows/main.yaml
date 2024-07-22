@@ -49,8 +49,10 @@ jobs:
       - name: Inject U-Boot build cache into buildx
         uses: reproducible-containers/buildkit-cache-dance@v3
         with:
-          cache-source: u-boot-build
-          cache-target: /u-boot/build-${{ matrix.board.name }}
+          cache-map: |
+            {
+              "u-boot-build": "/u-boot/build-${{ matrix.board.name }}"
+            }
           skip-extraction: ${{ steps.cache-u-boot-build.outputs.cache-hit }}
 
       - name: Build U-Boot for ${{ matrix.board.title }}
