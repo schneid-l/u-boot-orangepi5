@@ -13,8 +13,7 @@ jobs:
   build:
     name: Build U-Boot
     runs-on:
-      - self-hosted
-      - orangepi5-u-boot
+      - ubicloud-standard-16-arm
     strategy:
       max-parallel: 1
       matrix:
@@ -38,27 +37,24 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: remote
-          endpoint: ${{ vars.BUILDKIT_REMOTE_ENDPOINT }}
 
       - name: Cache U-Boot build
         id: cache-u-boot-build
-        uses: actions/cache@v4
+        uses: ubicloud/cache@v4
         with:
           save-always: true
           path: u-boot-build
           key: u-boot-${{ env.U_BOOT_VERSION }}-${{ matrix.board.name }}-${{ github.ref_name }}-${{ hashFiles('Dockerfile') }}-build
 
       - name: Inject U-Boot build cache into buildx
-        uses: reproducible-containers/buildkit-cache-dance@v2.1.4
+        uses: reproducible-containers/buildkit-cache-dance@v3
         with:
           cache-source: u-boot-build
           cache-target: /u-boot/build-${{ matrix.board.name }}
           skip-extraction: ${{ steps.cache-u-boot-build.outputs.cache-hit }}
 
       - name: Build U-Boot for ${{ matrix.board.title }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -80,8 +76,7 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on:
-      - self-hosted
-      - orangepi5-u-boot
+      - ubicloud-standard-2-arm
     permissions:
       contents: write
     steps:
