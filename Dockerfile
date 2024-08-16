@@ -60,9 +60,17 @@ FROM base AS u-boot-downloader
 ARG SOURCE_DATE_EPOCH
 ARG U_BOOT_VERSION=v2024.07
 ARG U_BOOT_SOURCE=https://source.denx.de/u-boot/u-boot/-/archive/${U_BOOT_VERSION}/u-boot-${U_BOOT_VERSION}.tar.gz
+ARG U_BOOT_PATCHES_DIR=./patches
 
-RUN mkdir -p /u-boot && \
-    curl -L ${U_BOOT_SOURCE} | tar -xz -C /u-boot --strip-components=1
+RUN mkdir -p /u-boot/src && \
+    mkdir -p /u-boot/patches && \
+    curl -L ${U_BOOT_SOURCE} | tar -xz -C /u-boot/src --strip-components=1
+
+COPY $U_BOOT_PATCHES_DIR/* /u-boot/patches/
+
+RUN for patch in /u-boot/patches/*.patch; do \
+        patch -d /u-boot/src -p1 < $patch; \
+    done
 
 FROM base AS rkbin-downloader
 
@@ -79,7 +87,7 @@ FROM base AS u-boot-builder
 
 ARG SOURCE_DATE_EPOCH
 
-COPY --from=u-boot-downloader /u-boot /u-boot/src
+COPY --from=u-boot-downloader /u-boot/src /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
 
 ARG U_BOOT_VERSION=v2024.07
