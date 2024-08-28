@@ -78,10 +78,10 @@ Build the U-Boot binary with Docker:
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-docker build --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-rk3588s
+docker build --platform="linux/arm64" --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-rk3588s
 
 # Orange Pi 5 Plus
-docker build --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-plus-rk3588
+docker build --platform="linux/arm64" --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-plus-rk3588
 ```
 
 The U-Boot binary will be available in the current directory.
