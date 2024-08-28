@@ -30,14 +30,14 @@ This repo only provides a version **made to be flashed on the SPI flash** of the
 
 To do this you will need an [official distribution](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-pi-5.html) provided by Orange Pi (or [Armbian](https://www.armbian.com/orangepi-5/)) booted from an SD card.
 
-Once booted, download your **board specific** U-Boot binary from the [releases section](https://github.com/si0ls/u-boot-orangepi5/releases):
+Once booted, download your **board specific** U-Boot binary from the [releases section](https://github.com/schneid-l/u-boot-orangepi5/releases):
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-wget https://github.com/si0ls/u-boot-orangepi5/releases/download/latest/u-boot-v2024.07-orangepi5-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-v2024.07-orangepi5-spi.bin
 
 # Orange Pi 5 Plus
-wget https://github.com/si0ls/u-boot-orangepi5/releases/download/latest/u-boot-v2024.07-orangepi5-plus-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-v2024.07-orangepi5-plus-spi.bin
 ```
 
 We will assume that the SPI flash chip is `/dev/mtdblock0` (you can check this by using `lsblk`).
@@ -70,7 +70,7 @@ To build the U-Boot binary, you will need to have Docker installed on your machi
 Clone this repo:
 
 ```bash
-git clone https://github.com/si0ls/u-boot-orangepi5.git
+git clone https://github.com/schneid-l/u-boot-orangepi5.git
 cd orangepi5-u-boot
 ```
 
