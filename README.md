@@ -10,12 +10,9 @@ This repo provides pre-built SPI flash U-Boot v2024.10 binaries for the Orange P
 
 ## Pre-built binaries
 
-This U-Boot build uses pre-built `BL31` and `TPL` binaries provided by Rockchip from [rkbin](https://github.com/rockchip-linux/rkbin) repo.
-For now the Arm Trusted Firmware (ATF) is not used as the rk3588 is not supported by the mainline ATF (waiting for [this change](https://review.trustedfirmware.org/c/TF-A/trusted-firmware-a/+/21840) has been merged, waiting for v12.2).
+This U-Boot build uses pre-built `TPL` binaries provided by Rockchip from [rkbin](https://github.com/rockchip-linux/rkbin) repo.
 
 This U-Boot build also uses [patches](https://github.com/armbian/build/tree/main/patch/u-boot/v2024.10) provided by Armbian to support the rk3588 SoC.
-
-I will update this repo as soon as a stable ATF version supporting rk3588 is released.
 
 ## Known issues
 

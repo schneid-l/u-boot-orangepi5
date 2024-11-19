@@ -55,6 +55,32 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     uuid-dev \
     && rm -rf /var/lib/apt/lists/*
 
+FROM base AS rkbin-downloader
+
+ARG SOURCE_DATE_EPOCH
+ARG RKBIN_SOURCE=https://github.com/rockchip-linux/rkbin/archive/refs/heads/master.tar.gz
+
+RUN mkdir -p /src && \
+    mkdir -p /rkbin && \
+    curl -L ${RKBIN_SOURCE} | tar -xz -C /src --strip-components=1 && \
+    cp /src/bin/rk35/$(ls -1 /src/bin/rk35 | grep -E 'rk3588_ddr_lp4_2112MHz_lp5_2400MHz_v[0-9.]+.bin' | tail -n 1) /rkbin/tpl.bin
+
+FROM base AS arm-trusted-firmware
+
+ARG SOURCE_DATE_EPOCH
+ARG ATF_VERSION=v2.12-rc0
+ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
+
+RUN mkdir -p /atf/src && \
+    curl -L ${ATF_SOURCE} | tar -xz -C /atf/src --strip-components=1
+
+WORKDIR /atf/src
+
+RUN --mount=type=cache,target=/atf/src/build \
+    CFLAGS=--param=min-pagesize=0 make -j$(nproc) DEBUG=0 PLAT=rk3588 bl31 && \
+    cp build/rk3588/release/bl31/bl31.elf /atf/bl31.elf && \
+    rm -rf src
+
 FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
@@ -72,23 +98,13 @@ RUN for patch in /u-boot/patches/*.patch; do \
     patch -d /u-boot/src -p1 < $patch; \
     done
 
-FROM base AS rkbin-downloader
-
-ARG SOURCE_DATE_EPOCH
-ARG RKBIN_SOURCE=https://github.com/rockchip-linux/rkbin/archive/refs/heads/master.tar.gz
-
-RUN mkdir -p /src && \
-    mkdir -p /rkbin && \
-    curl -L ${RKBIN_SOURCE} | tar -xz -C /src --strip-components=1 && \
-    cp /src/bin/rk35/$(ls -1 /src/bin/rk35 | grep -E 'rk3588_ddr_lp4_2112MHz_lp5_2400MHz_v[0-9.]+.bin' | tail -n 1) /rkbin/tpl.bin && \
-    cp /src/bin/rk35/$(ls -1 /src/bin/rk35 | grep -E 'rk3588_bl31_v[0-9.]+.elf' | tail -n 1) /rkbin/bl31.bin
-
 FROM base AS u-boot-builder
 
 ARG SOURCE_DATE_EPOCH
 
 COPY --from=u-boot-downloader /u-boot/src /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
+COPY --from=arm-trusted-firmware /atf /atf
 
 ARG U_BOOT_VERSION=v2024.10
 ARG BOARD=orangepi5
@@ -96,7 +112,7 @@ ARG NAME=u-boot-${U_BOOT_VERSION}-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
 
 ENV ROCKCHIP_TPL=/rkbin/tpl.bin
-ENV BL31=/rkbin/bl31.bin
+ENV BL31=/atf/bl31.elf
 ENV ARCH=arm64
 
 WORKDIR /u-boot/src
