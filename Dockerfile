@@ -58,7 +58,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
-ARG U_BOOT_VERSION=v2024.07
+ARG U_BOOT_VERSION=v2024.10
 ARG U_BOOT_SOURCE=https://source.denx.de/u-boot/u-boot/-/archive/${U_BOOT_VERSION}/u-boot-${U_BOOT_VERSION}.tar.gz
 ARG U_BOOT_PATCHES_DIR=./patches
 
@@ -69,7 +69,7 @@ RUN mkdir -p /u-boot/src && \
 COPY $U_BOOT_PATCHES_DIR/* /u-boot/patches/
 
 RUN for patch in /u-boot/patches/*.patch; do \
-        patch -d /u-boot/src -p1 < $patch; \
+    patch -d /u-boot/src -p1 < $patch; \
     done
 
 FROM base AS rkbin-downloader
@@ -90,7 +90,7 @@ ARG SOURCE_DATE_EPOCH
 COPY --from=u-boot-downloader /u-boot/src /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
 
-ARG U_BOOT_VERSION=v2024.07
+ARG U_BOOT_VERSION=v2024.10
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${U_BOOT_VERSION}-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
@@ -113,7 +113,7 @@ FROM scratch AS u-boot
 
 ARG SOURCE_DATE_EPOCH
 
-ARG U_BOOT_VERSION=v2024.07
+ARG U_BOOT_VERSION=v2024.10
 ARG BOARD=orangepi5
 ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
 ARG IMAGE_TITLE="Orange Pi 5 U-Boot ${U_BOOT_VERSION}"
