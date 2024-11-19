@@ -10,7 +10,6 @@ jobs:
     runs-on:
       - ubicloud-standard-16-arm
     strategy:
-      max-parallel: 1
       matrix:
         board:
           - title: Orange Pi 5
@@ -35,9 +34,8 @@ jobs:
 
       - name: Cache U-Boot build
         id: cache-u-boot-build
-        uses: ubicloud/cache@v4
+        uses: actions/cache@v4
         with:
-          save-always: true
           path: u-boot-build
           key: u-boot-${{ env.U_BOOT_VERSION }}-${{ matrix.board.name }}-${{ github.ref_name }}-${{ hashFiles('Dockerfile') }}-build
 
