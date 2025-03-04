@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ARG SOURCE_DATE_EPOCH
 ARG DEBIAN_FRONTEND=noninteractive
