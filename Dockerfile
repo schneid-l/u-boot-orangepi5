@@ -68,7 +68,8 @@ RUN mkdir -p /src && \
 FROM base AS arm-trusted-firmware
 
 ARG SOURCE_DATE_EPOCH
-ARG ATF_VERSION=v2.12-rc0
+# renovate: datasource=github-releases packageName=ARM-software/arm-trusted-firmware
+ARG ATF_VERSION=v2.12
 ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
 
 RUN mkdir -p /atf/src && \
@@ -84,19 +85,12 @@ RUN --mount=type=cache,target=/atf/src/build \
 FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
-ARG U_BOOT_VERSION=v2024.10
-ARG U_BOOT_SOURCE=https://source.denx.de/u-boot/u-boot/-/archive/${U_BOOT_VERSION}/u-boot-${U_BOOT_VERSION}.tar.gz
-ARG U_BOOT_PATCHES_DIR=./patches
+# renovate: datasource=github-releases packageName=u-boot/u-boot
+ARG U_BOOT_VERSION=v2025.01
+ARG U_BOOT_SOURCE=https://github.com/u-boot/u-boot/archive/refs/tags/${U_BOOT_VERSION}.tar.gz
 
 RUN mkdir -p /u-boot/src && \
-    mkdir -p /u-boot/patches && \
     curl -L ${U_BOOT_SOURCE} | tar -xz -C /u-boot/src --strip-components=1
-
-COPY $U_BOOT_PATCHES_DIR/* /u-boot/patches/
-
-RUN for patch in /u-boot/patches/*.patch; do \
-    patch -d /u-boot/src -p1 < $patch; \
-    done
 
 FROM base AS u-boot-builder
 
@@ -106,7 +100,8 @@ COPY --from=u-boot-downloader /u-boot/src /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
 COPY --from=arm-trusted-firmware /atf /atf
 
-ARG U_BOOT_VERSION=v2024.10
+# renovate: datasource=github-releases packageName=u-boot/u-boot
+ARG U_BOOT_VERSION=v2025.01
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${U_BOOT_VERSION}-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
@@ -129,7 +124,8 @@ FROM scratch AS u-boot
 
 ARG SOURCE_DATE_EPOCH
 
-ARG U_BOOT_VERSION=v2024.10
+# renovate: datasource=github-releases packageName=u-boot/u-boot
+ARG U_BOOT_VERSION=v2025.01
 ARG BOARD=orangepi5
 ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
 ARG IMAGE_TITLE="Orange Pi 5 U-Boot ${U_BOOT_VERSION}"
