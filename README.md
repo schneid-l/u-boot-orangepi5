@@ -1,6 +1,6 @@
 # U-Boot build for Orange Pi 5
 
-This repo provides pre-built SPI flash U-Boot v2024.10 binaries for the Orange Pi 5 (and variants) board.
+This repo provides pre-built SPI flash U-Boot binaries for the Orange Pi 5 (and variants) board.
 
 ## Supported boards
 
@@ -11,8 +11,6 @@ This repo provides pre-built SPI flash U-Boot v2024.10 binaries for the Orange P
 ## Pre-built binaries
 
 This U-Boot build uses pre-built `TPL` binaries provided by Rockchip from [rkbin](https://github.com/rockchip-linux/rkbin) repo.
-
-This U-Boot build also uses [patches](https://github.com/armbian/build/tree/main/patch/u-boot/v2024.10) provided by Armbian to support the rk3588 SoC.
 
 ## Known issues
 
@@ -32,10 +30,10 @@ Once booted, download your **board specific** U-Boot binary from the [releases s
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-v2024.10-orangepi5-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-orangepi5-spi.bin
 
 # Orange Pi 5 Plus
-wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-v2024.10-orangepi5-plus-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-orangepi5-plus-spi.bin
 ```
 
 We will assume that the SPI flash chip is `/dev/mtdblock0` (you can check this by using `lsblk`).
@@ -51,10 +49,10 @@ Flash the U-Boot binary:
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-dd if=u-boot-v2024.10-orangepi5-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
+dd if=u-boot-orangepi5-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
 
 # Orange Pi 5 Plus
-dd if=u-boot-v2024.10-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
+dd if=u-boot-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
 ```
 
 Reboot the board, _et voilà_!
@@ -86,7 +84,7 @@ The U-Boot binary will be available in the current directory.
 
 Available build args:
 
-- `U_BOOT_VERSION`: the U-Boot version to build (default: `v2024.10`)
+- `U_BOOT_VERSION`: the U-Boot version to build (default: last version)
 - `DEFCONFIG`: the U-Boot defconfig to use (`_defconfig` is automatically appended, default: `orangepi-5-rk3588s`)
 - `BOARD`: the board name (used in the output name, default: `orangepi5`)
 - `NAME`: the binary output name (default: `u-boot-${U_BOOT_VERSION}-${NAME}-spi`)

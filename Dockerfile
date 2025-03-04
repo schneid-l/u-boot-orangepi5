@@ -103,7 +103,7 @@ COPY --from=arm-trusted-firmware /atf /atf
 # renovate: datasource=github-releases packageName=u-boot/u-boot
 ARG U_BOOT_VERSION=v2025.01
 ARG BOARD=orangepi5
-ARG NAME=u-boot-${U_BOOT_VERSION}-${BOARD}-spi
+ARG NAME=u-boot-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
 
 ENV ROCKCHIP_TPL=/rkbin/tpl.bin
