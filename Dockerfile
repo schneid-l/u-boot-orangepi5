@@ -68,7 +68,7 @@ RUN mkdir -p /src && \
 FROM base AS arm-trusted-firmware
 
 ARG SOURCE_DATE_EPOCH
-# renovate: datasource=github-releases packageName=ARM-software/arm-trusted-firmware
+# renovate: datasource=git-tags packageName=ARM-software/arm-trusted-firmware versioning=semver
 ARG ATF_VERSION=v2.12
 ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
 
