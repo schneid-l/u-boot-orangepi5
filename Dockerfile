@@ -68,7 +68,7 @@ RUN mkdir -p /src && \
 FROM base AS arm-trusted-firmware
 
 ARG SOURCE_DATE_EPOCH
-# renovate: datasource=git-tags packageName=ARM-software/arm-trusted-firmware versioning=semver
+# renovate: datasource=git-tags packageName=ARM-software/arm-trusted-firmware versioning=semver-coerced
 ARG ATF_VERSION=v2.12
 ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
 
@@ -85,7 +85,7 @@ RUN --mount=type=cache,target=/atf/src/build \
 FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
-# renovate: datasource=github-tags packageName=u-boot/u-boot
+# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=semver-coerced
 ARG U_BOOT_VERSION=v2025.01
 ARG U_BOOT_SOURCE=https://github.com/u-boot/u-boot/archive/refs/tags/${U_BOOT_VERSION}.tar.gz
 
@@ -100,7 +100,7 @@ COPY --from=u-boot-downloader /u-boot/src /u-boot/src
 COPY --from=rkbin-downloader /rkbin /rkbin
 COPY --from=arm-trusted-firmware /atf /atf
 
-# renovate: datasource=github-tags packageName=u-boot/u-boot
+# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=semver-coerced
 ARG U_BOOT_VERSION=v2025.01
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${BOARD}-spi
@@ -124,7 +124,7 @@ FROM scratch AS u-boot
 
 ARG SOURCE_DATE_EPOCH
 
-# renovate: datasource=github-tags packageName=u-boot/u-boot
+# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=semver-coerced
 ARG U_BOOT_VERSION=v2025.01
 ARG BOARD=orangepi5
 ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
