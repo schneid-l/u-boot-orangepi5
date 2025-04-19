@@ -69,7 +69,7 @@ FROM base AS arm-trusted-firmware
 
 ARG SOURCE_DATE_EPOCH
 # renovate: datasource=github-tags packageName=ARM-software/arm-trusted-firmware versioning=loose
-ARG ATF_VERSION=v2.12
+ARG ATF_VERSION=v2.12.0
 ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
 
 RUN mkdir -p /atf/src && \
