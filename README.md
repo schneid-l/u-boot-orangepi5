@@ -42,17 +42,17 @@ Reset the SPI flash:
 
 ```bash
 devicesize=$(blockdev --getsz /dev/mtdblock0)
-dd if=/dev/zero of=/dev/mtdblock0 bs=1M count=$devicesize status=progress && sync
+dd if=/dev/zero of=/dev/mtdblock0 bs=512k count=$devicesize status=progress && sync
 ```
 
 Flash the U-Boot binary:
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-dd if=u-boot-orangepi5-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
+dd if=u-boot-orangepi5-spi.bin of=/dev/mtdblock0 bs=512k status=progress && sync
 
 # Orange Pi 5 Plus
-dd if=u-boot-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=1M status=progress && sync
+dd if=u-boot-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=512k status=progress && sync
 ```
 
 Reboot the board, _et voilà_!
