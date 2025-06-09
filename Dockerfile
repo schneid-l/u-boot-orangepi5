@@ -86,7 +86,7 @@ FROM base AS u-boot-downloader
 
 ARG SOURCE_DATE_EPOCH
 # renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
+ARG U_BOOT_VERSION=v2025.07-rc4
 ARG U_BOOT_SOURCE=https://github.com/u-boot/u-boot/archive/refs/tags/${U_BOOT_VERSION}.tar.gz
 
 RUN mkdir -p /u-boot/src && \
@@ -101,7 +101,7 @@ COPY --from=rkbin-downloader /rkbin /rkbin
 COPY --from=arm-trusted-firmware /atf /atf
 
 # renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
+ARG U_BOOT_VERSION=v2025.07-rc4
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
@@ -125,7 +125,7 @@ FROM scratch AS u-boot
 ARG SOURCE_DATE_EPOCH
 
 # renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
+ARG U_BOOT_VERSION=v2025.07-rc4
 ARG BOARD=orangepi5
 ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
 ARG IMAGE_TITLE="Orange Pi 5 U-Boot ${U_BOOT_VERSION}"
