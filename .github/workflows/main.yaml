@@ -20,7 +20,7 @@ jobs:
             defconfig: orangepi-5-plus-rk3588
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Login to registry
         uses: docker/login-action@v3
