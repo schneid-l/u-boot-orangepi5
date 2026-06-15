@@ -128,6 +128,8 @@ This repo is self-updating:
 
 In short: a new upstream U-Boot, ATF or rkbin release ends up as a signed GitHub release with no manual steps.
 
+To avoid spending CI minutes on untrusted contributions, the build only runs for pushes to `main`, Renovate PRs, PRs from the repository owner, and PRs labelled `build` (maintainers can add the label to run CI on an external PR). Build layers are cached on `ghcr.io`, shared across branches, so a build validated in a PR is reused unchanged once it lands on `main`.
+
 ## License
 
 The U-Boot source code is licensed under the GPL-2.0 license. So this repo too.

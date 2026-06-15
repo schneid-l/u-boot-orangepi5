@@ -26,10 +26,18 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.board.title }}
+    # Only spend runner minutes on trusted PRs: Renovate, the repo owner, or a
+    # PR explicitly labelled "build". Pushes to main and manual runs always build.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.user.login == 'renovate[bot]' ||
+      github.event.pull_request.author_association == 'OWNER' ||
+      contains(github.event.pull_request.labels.*.name, 'build')
     runs-on:
       - ubicloud-standard-16-arm
     permissions:
       contents: read
+      packages: write # push/pull the buildkit registry cache on ghcr.io
       id-token: write # SLSA provenance attestation
       attestations: write # SLSA provenance attestation
     strategy:
@@ -49,6 +57,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
+      # Registry cache lives on ghcr.io so it is shared across all branches
+      # (unlike type=gha, which main cannot read from a PR). A PR build warms
+      # the cache and the post-merge build on main reuses every layer.
+      - name: Log in to ghcr.io (build cache)
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build ${{ matrix.board.title }}
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
@@ -56,8 +74,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64
           outputs: type=local,dest=./out
-          cache-from: type=gha,scope=${{ matrix.board.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.board.name }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }}
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }},mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,ignore-error=true
           build-args: |
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
             BOARD=${{ matrix.board.name }}
