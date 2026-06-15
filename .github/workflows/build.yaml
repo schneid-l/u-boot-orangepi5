@@ -114,12 +114,20 @@ jobs:
         id: meta
         run: |
           manifest=$(printf '%s\n' artifacts/*.manifest.json | head -n1)
+          if [ ! -f "$manifest" ]; then
+            echo "::error::No build manifest found among the artifacts"; exit 1
+          fi
+          uboot=$(jq -r '.u_boot_version' "$manifest")
+          if [ -z "$uboot" ] || [ "$uboot" = "null" ]; then
+            echo "::error::u_boot_version missing from $manifest"; exit 1
+          fi
           {
-            echo "uboot=$(jq -r .u_boot_version "$manifest")"
-            echo "atf=$(jq -r .atf_version "$manifest")"
-            echo "rkbin_ddr=$(jq -r .rkbin_ddr_version "$manifest")"
-            echo "rkbin_ref=$(jq -r .rkbin_ref "$manifest")"
+            echo "uboot=$uboot"
+            echo "atf=$(jq -r '.atf_version' "$manifest")"
+            echo "rkbin_ddr=$(jq -r '.rkbin_ddr_version' "$manifest")"
+            echo "rkbin_ref=$(jq -r '.rkbin_ref' "$manifest")"
           } >> "$GITHUB_OUTPUT"
+          echo "Releasing U-Boot $uboot"
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -136,6 +144,8 @@ jobs:
           tag_name: ${{ steps.meta.outputs.uboot }}
           name: U-Boot ${{ steps.meta.outputs.uboot }} — Orange Pi 5
           make_latest: true
+          draft: false
+          prerelease: false
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
