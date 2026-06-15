@@ -17,7 +17,7 @@ ARG RKBIN_REF=ecb4fcbe954edf38b3ae037d5de6d9f5bccf81f4
 # Base build environment. The base image is pinned by digest and kept current
 # by Renovate (docker:pinDigests).
 # ---------------------------------------------------------------------------
-FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54 AS base
+FROM ubuntu:26.04@sha256:f3d28607ddd78734bb7f71f117f3c6706c666b8b76cbff7c9ff6e5718d46ff64 AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
