@@ -26,14 +26,14 @@ This repo only provides a version **made to be flashed on the SPI flash** of the
 
 To do this you will need an [official distribution](http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-pi-5.html) provided by Orange Pi (or [Armbian](https://www.armbian.com/orangepi-5/)) booted from an SD card.
 
-Once booted, download your **board specific** U-Boot binary from the [releases section](https://github.com/schneid-l/u-boot-orangepi5/releases):
+Once booted, download your **board specific** U-Boot binary from the [latest release](https://github.com/schneid-l/u-boot-orangepi5/releases/latest):
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-orangepi5-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-spi.bin
 
 # Orange Pi 5 Plus
-wget https://github.com/schneid-l/u-boot-orangepi5/releases/download/latest/u-boot-orangepi5-plus-spi.bin
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-plus-spi.bin
 ```
 
 We will assume that the SPI flash chip is `/dev/mtdblock0` (you can check this by using `lsblk`).
@@ -57,6 +57,28 @@ dd if=u-boot-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=512k status=progress &&
 
 Reboot the board, _et voilà_!
 
+## Verify the binaries
+
+Every released binary is signed and carries [SLSA build provenance](https://slsa.dev/), so you can verify it was built by this repository's CI from this source.
+
+Verify the provenance attestation with the GitHub CLI:
+
+```bash
+gh attestation verify u-boot-orangepi5-spi.bin --repo schneid-l/u-boot-orangepi5
+```
+
+Or verify the [cosign](https://docs.sigstore.dev/) signature (download the matching `.cosign.bundle` from the release):
+
+```bash
+cosign verify-blob \
+  --bundle u-boot-orangepi5-spi.bin.cosign.bundle \
+  --certificate-identity-regexp '^https://github.com/schneid-l/u-boot-orangepi5/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  u-boot-orangepi5-spi.bin
+```
+
+Each release also ships a `*.manifest.json` recording the exact U-Boot, ARM Trusted Firmware and rkbin versions that went into the binary.
+
 ## Build
 
 Build is done using a Docker container to ensure reproducibility.
@@ -67,30 +89,44 @@ Clone this repo:
 
 ```bash
 git clone https://github.com/schneid-l/u-boot-orangepi5.git
-cd orangepi5-u-boot
+cd u-boot-orangepi5
 ```
 
 Build the U-Boot binary with Docker:
 
 ```bash
 # Orange Pi 5 (and Orange Pi 5B)
-docker build --platform="linux/arm64" --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-rk3588s
+docker build --platform=linux/arm64 --output type=local,dest=. \
+  --build-arg BOARD=orangepi5 --build-arg DEFCONFIG=orangepi-5-rk3588s .
 
 # Orange Pi 5 Plus
-docker build --platform="linux/arm64" --output type=local,dest=. . --build-arg DEFCONFIG=orangepi-5-plus-rk3588
+docker build --platform=linux/arm64 --output type=local,dest=. \
+  --build-arg BOARD=orangepi5-plus --build-arg DEFCONFIG=orangepi-5-plus-rk3588 .
 ```
 
-The U-Boot binary will be available in the current directory.
+The U-Boot binary (`u-boot-${BOARD}-spi.bin`) and a `*.manifest.json` describing the exact versions used will be available in the current directory.
 
 Available build args:
 
-- `U_BOOT_VERSION`: the U-Boot version to build (default: last version)
+- `U_BOOT_VERSION`: the U-Boot release tag to build (default: latest stable, kept up to date by Renovate)
+- `ATF_VERSION`: the ARM Trusted Firmware release tag (default: latest stable, kept up to date by Renovate)
+- `RKBIN_REF`: the rkbin commit to pull the Rockchip DDR/TPL blob from (default: a pinned `master` commit, kept up to date by Renovate)
 - `DEFCONFIG`: the U-Boot defconfig to use (`_defconfig` is automatically appended, default: `orangepi-5-rk3588s`)
-- `BOARD`: the board name (used in the output name, default: `orangepi5`)
-- `NAME`: the binary output name (default: `u-boot-${U_BOOT_VERSION}-${NAME}-spi`)
-- `SOURCE_DATE_EPOCH`: the source date epoch to use for reproducibility (default: the last commit date)
+- `BOARD`: the board name, used in the output filename (default: `orangepi5`)
+- `NAME`: the binary output name (default: `u-boot-${BOARD}-spi`)
+- `SOURCE_DATE_EPOCH`: Unix timestamp for [reproducible builds](https://reproducible-builds.org/) (optional; CI pins a fixed value)
 
-_As this image uses the rkbin provided BL31 and TPL binaries for rk3588, this build environment could be used to build U-Boot for any rk3588 board by passing the correct `DEFCONFIG` argument._
+_As this image bundles the rkbin-provided DDR/TPL blob and an ARM-Trusted-Firmware-built BL31 for rk3588, this build environment can build U-Boot for any rk3588 board by passing the correct `DEFCONFIG` argument._
+
+## Automation
+
+This repo is self-updating:
+
+- [Renovate](https://docs.renovatebot.com/) watches the U-Boot and ARM Trusted Firmware release tags and the rkbin `master` commit (all pinned in the [Dockerfile](Dockerfile)), and the GitHub Actions used by the pipeline.
+- When a new version appears, Renovate opens a PR; once CI builds both boards successfully, the PR is auto-merged.
+- A merge to `main` builds the binaries and publishes a new signed release automatically, tagged with the U-Boot version.
+
+In short: a new upstream U-Boot, ATF or rkbin release ends up as a signed GitHub release with no manual steps.
 
 ## License
 
