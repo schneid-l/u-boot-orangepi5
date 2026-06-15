@@ -1,146 +1,132 @@
 # syntax=docker/dockerfile:1
 
+# ---------------------------------------------------------------------------
+# Versions (single source of truth — declared as global ARGs and inherited by
+# every stage). Renovate keeps these up to date; see .github/renovate.json5.
+# ---------------------------------------------------------------------------
+
+# renovate: datasource=github-tags depName=u-boot packageName=u-boot/u-boot versioning=loose
+ARG U_BOOT_VERSION=v2026.04
+# renovate: datasource=github-tags depName=arm-trusted-firmware packageName=ARM-software/arm-trusted-firmware versioning=loose
+ARG ATF_VERSION=v2.15.0
+# rkbin has no tags/releases, so it is pinned to an exact commit of `master`.
+# renovate: datasource=git-refs depName=rkbin packageName=https://github.com/rockchip-linux/rkbin currentValue=master
+ARG RKBIN_REF=ecb4fcbe954edf38b3ae037d5de6d9f5bccf81f4
+
+# ---------------------------------------------------------------------------
+# Base build environment
+# ---------------------------------------------------------------------------
 FROM ubuntu:24.04 AS base
 
-ARG SOURCE_DATE_EPOCH
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Minimal toolchain to build U-Boot + binman for rk3588. Anything only needed
+# by U-Boot's docs/test suite (sphinx, pytest, coccinelle, sdl2, ...) is left
+# out on purpose to keep the image small and the build fast.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    rm -f /etc/apt/apt.conf.d/docker-clean; \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     apt-get update && apt-get install --no-install-recommends -y \
-    bc \
-    bison \
-    build-essential \
-    ca-certificates \
-    coccinelle \
-    curl \
-    device-tree-compiler \
-    dfu-util \
-    efitools \
-    flex \
-    gdisk \
-    git \
-    graphviz \
-    imagemagick \
-    liblz4-tool \
-    libgnutls28-dev \
-    libguestfs-tools \
-    libncurses-dev \
-    libpython3-dev \
-    libsdl2-dev \
-    libssl-dev \
-    lz4 \
-    lzma \
-    lzma-alone \
-    openssl \
-    pkg-config \
-    python3 \
-    python3-asteval \
-    python3-coverage \
-    python3-filelock \
-    python3-pkg-resources \
-    python3-pycryptodome \
-    python3-pyelftools \
-    python3-pytest \
-    python3-pytest-xdist \
-    python3-sphinxcontrib.apidoc \
-    python3-sphinx-rtd-theme \
-    python3-subunit \
-    python3-testtools \
-    python3-virtualenv \
-    swig \
-    uuid-dev \
+      bc \
+      bison \
+      build-essential \
+      ca-certificates \
+      curl \
+      device-tree-compiler \
+      flex \
+      git \
+      libgnutls28-dev \
+      libssl-dev \
+      lz4 \
+      pkg-config \
+      python3 \
+      python3-dev \
+      python3-pycryptodome \
+      python3-pyelftools \
+      python3-setuptools \
+      swig \
+      uuid-dev \
     && rm -rf /var/lib/apt/lists/*
 
-FROM base AS rkbin-downloader
+# ---------------------------------------------------------------------------
+# Rockchip blobs (DDR init / TPL). Pinned to an exact rkbin commit.
+# ---------------------------------------------------------------------------
+FROM base AS rkbin
+ARG RKBIN_REF
+ARG RKBIN_SOURCE=https://github.com/rockchip-linux/rkbin/archive/${RKBIN_REF}.tar.gz
 
-ARG SOURCE_DATE_EPOCH
-ARG RKBIN_SOURCE=https://github.com/rockchip-linux/rkbin/archive/refs/heads/master.tar.gz
+RUN mkdir -p /src /rkbin && \
+    curl -fsSL "${RKBIN_SOURCE}" | tar -xz -C /src --strip-components=1 && \
+    ddr="$(ls -1 /src/bin/rk35 | grep -E 'rk3588_ddr_lp4_2112MHz_lp5_2400MHz_v[0-9.]+\.bin' | sort -V | tail -n1)" && \
+    test -n "${ddr}" && \
+    cp "/src/bin/rk35/${ddr}" /rkbin/tpl.bin && \
+    echo "${ddr}" | sed -E 's/.*_v([0-9.]+)\.bin/\1/' > /rkbin/ddr.version
 
-RUN mkdir -p /src && \
-    mkdir -p /rkbin && \
-    curl -L ${RKBIN_SOURCE} | tar -xz -C /src --strip-components=1 && \
-    cp /src/bin/rk35/$(ls -1 /src/bin/rk35 | grep -E 'rk3588_ddr_lp4_2112MHz_lp5_2400MHz_v[0-9.]+.bin' | tail -n 1) /rkbin/tpl.bin
-
+# ---------------------------------------------------------------------------
+# Arm Trusted Firmware (BL31)
+# ---------------------------------------------------------------------------
 FROM base AS arm-trusted-firmware
-
-ARG SOURCE_DATE_EPOCH
-# renovate: datasource=github-tags packageName=ARM-software/arm-trusted-firmware versioning=loose
-ARG ATF_VERSION=v2.12.0
+ARG ATF_VERSION
 ARG ATF_SOURCE=https://github.com/ARM-software/arm-trusted-firmware/archive/refs/tags/${ATF_VERSION}.tar.gz
 
 RUN mkdir -p /atf/src && \
-    curl -L ${ATF_SOURCE} | tar -xz -C /atf/src --strip-components=1
+    curl -fsSL "${ATF_SOURCE}" | tar -xz -C /atf/src --strip-components=1
 
 WORKDIR /atf/src
-
 RUN --mount=type=cache,target=/atf/src/build \
-    CFLAGS=--param=min-pagesize=0 make -j$(nproc) DEBUG=0 PLAT=rk3588 bl31 && \
-    cp build/rk3588/release/bl31/bl31.elf /atf/bl31.elf && \
-    rm -rf src
+    CFLAGS=--param=min-pagesize=0 make -j"$(nproc)" DEBUG=0 PLAT=rk3588 bl31 && \
+    cp build/rk3588/release/bl31/bl31.elf /atf/bl31.elf
 
-FROM base AS u-boot-downloader
-
-ARG SOURCE_DATE_EPOCH
-# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
+# ---------------------------------------------------------------------------
+# U-Boot source
+# ---------------------------------------------------------------------------
+FROM base AS u-boot-source
+ARG U_BOOT_VERSION
 ARG U_BOOT_SOURCE=https://github.com/u-boot/u-boot/archive/refs/tags/${U_BOOT_VERSION}.tar.gz
 
 RUN mkdir -p /u-boot/src && \
-    curl -L ${U_BOOT_SOURCE} | tar -xz -C /u-boot/src --strip-components=1
+    curl -fsSL "${U_BOOT_SOURCE}" | tar -xz -C /u-boot/src --strip-components=1
 
+# ---------------------------------------------------------------------------
+# U-Boot build
+# ---------------------------------------------------------------------------
 FROM base AS u-boot-builder
-
+ARG U_BOOT_VERSION
+ARG ATF_VERSION
+ARG RKBIN_REF
 ARG SOURCE_DATE_EPOCH
 
-COPY --from=u-boot-downloader /u-boot/src /u-boot/src
-COPY --from=rkbin-downloader /rkbin /rkbin
-COPY --from=arm-trusted-firmware /atf /atf
-
-# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
 ARG BOARD=orangepi5
 ARG NAME=u-boot-${BOARD}-spi
 ARG DEFCONFIG=orangepi-5-rk3588s
 
+COPY --from=u-boot-source /u-boot/src /u-boot/src
+COPY --from=rkbin /rkbin /rkbin
+COPY --from=arm-trusted-firmware /atf /atf
+
 ENV ROCKCHIP_TPL=/rkbin/tpl.bin
 ENV BL31=/atf/bl31.elf
 ENV ARCH=arm64
+# Honour reproducible-builds timestamp inside U-Boot itself.
+ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
 
 WORKDIR /u-boot/src
 RUN --mount=type=cache,target=/u-boot/build \
-    make O=/u-boot/build -j$(nproc) ${DEFCONFIG}_defconfig && \
-    make O=/u-boot/build -j$(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto"
+    make O=/u-boot/build -j"$(nproc)" "${DEFCONFIG}_defconfig" && \
+    make O=/u-boot/build -j"$(nproc)" HOSTLDLIBS_mkimage="-lssl -lcrypto"
 
 WORKDIR /u-boot
 RUN --mount=type=cache,target=/u-boot/build \
     mkdir -p out && \
-    cp -r build/u-boot-rockchip-spi.bin out/${NAME}.bin
+    cp build/u-boot-rockchip-spi.bin "out/${NAME}.bin" && \
+    printf '{\n  "board": "%s",\n  "u_boot_version": "%s",\n  "atf_version": "%s",\n  "rkbin_ref": "%s",\n  "rkbin_ddr_version": "v%s",\n  "source_date_epoch": "%s"\n}\n' \
+      "${BOARD}" "${U_BOOT_VERSION}" "${ATF_VERSION}" "${RKBIN_REF}" "$(cat /rkbin/ddr.version)" "${SOURCE_DATE_EPOCH}" \
+      > "out/${NAME}.manifest.json"
 
+# ---------------------------------------------------------------------------
+# Final export stage — `--output type=local,dest=.` writes these files to the
+# build context directory. No OCI image is published; releases ship the .bin.
+# ---------------------------------------------------------------------------
 FROM scratch AS u-boot
-
-ARG SOURCE_DATE_EPOCH
-
-# renovate: datasource=github-tags packageName=u-boot/u-boot versioning=loose
-ARG U_BOOT_VERSION=v2025.04
-ARG BOARD=orangepi5
-ARG IMAGE_NAME="${BOARD}-u-boot-${U_BOOT_VERSION}"
-ARG IMAGE_TITLE="Orange Pi 5 U-Boot ${U_BOOT_VERSION}"
-ARG IMAGE_DESCRIPTION="U-Boot ${U_BOOT_VERSION}} for Orange Pi 5"
-ARG IMAGE_SOURCE="https://github.com/schneid-l/u-boot-orangepi5"
-ARG IMAGE_AUTHORS="Louis S. <louis@schne.id>"
-ARG IMAGE_VENDOR="Denx Software Engineering"
-ARG IMAGE_VERSION=$U_BOOT_VERSION
-
-LABEL org.opencontainers.image.name=$IMAGE_NAME
-LABEL org.opencontainers.image.title=$IMAGE_TITLE
-LABEL org.opencontainers.image.description=$IMAGE_DESCRIPTION
-LABEL org.opencontainers.image.source=$IMAGE_SOURCE
-LABEL org.opencontainers.image.authors=$IMAGE_AUTHORS
-LABEL org.opencontainers.image.vendor=$IMAGE_VENDOR
-LABEL org.opencontainers.image.version=$IMAGE_VERSION
-
 COPY --from=u-boot-builder /u-boot/out/* /
