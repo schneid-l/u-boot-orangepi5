@@ -1,6 +1,9 @@
-name: Clear all Github actions caches
+name: Clear Actions caches
+
 on:
   workflow_dispatch:
+
+permissions: {}
 
 jobs:
   clear-cache:
@@ -9,5 +12,8 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: Clear caches
-        uses: easimon/wipe-cache@main
+      - name: Delete all caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh cache delete --all
