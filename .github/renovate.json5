@@ -1,0 +1,45 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    // Pin every GitHub Action to a commit SHA and keep the SHA updated.
+    'helpers:pinGitHubActionDigests',
+    ':dependencyDashboard',
+    ':semanticCommits',
+  ],
+
+  // Fully hands-off: CI validates the build, then Renovate merges on green.
+  // A merge to `main` is what cuts a new signed release (see build.yaml).
+  automerge: true,
+  platformAutomerge: true,
+  prCreation: 'immediate',
+  prHourlyLimit: 0,
+
+  customManagers: [
+    {
+      customType: 'regex',
+      description: 'U-Boot and ATF release tags pinned as Dockerfile ARGs',
+      managerFilePatterns: ['/(^|/)Dockerfile$/'],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>github-tags) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) versioning=(?<versioning>[a-z-]+)\\s+ARG \\w+_VERSION=(?<currentValue>\\S+)',
+      ],
+    },
+    {
+      customType: 'regex',
+      description: 'rkbin commit pin (upstream has no tags, so master is pinned by digest)',
+      managerFilePatterns: ['/(^|/)Dockerfile$/'],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>git-refs) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) currentValue=(?<currentValue>\\S+)\\s+ARG \\w+_REF=(?<currentDigest>\\S+)',
+      ],
+    },
+  ],
+
+  packageRules: [
+    {
+      // Never build pre-releases (-rc) of U-Boot or ATF.
+      matchManagers: ['custom.regex'],
+      matchDepNames: ['u-boot', 'arm-trusted-firmware'],
+      allowedVersions: '!/-rc/',
+    },
+  ],
+}
