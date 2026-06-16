@@ -2,11 +2,16 @@
 
 This repo provides pre-built SPI flash U-Boot binaries for the Orange Pi 5 (and variants) board.
 
+> [!WARNING]
+> These binaries are **built and released fully automatically** whenever U-Boot, ATF, OP-TEE or rkbin publish a new version — **nobody boots them on real hardware before release**, so a successful boot is **not guaranteed**. This is the deliberate trade-off for always-fresh builds; in practice the upstream projects are stable, and flashing U-Boot to SPI is recoverable. If a binary doesn't boot, see [Recovery](#recovery-unbrick) below.
+
 ## Supported boards
 
 - Orange Pi 5
 - Orange Pi 5B (use the same binary as the Orange Pi 5)
 - Orange Pi 5 Plus
+- Orange Pi 5 Max
+- Orange Pi 5 Ultra
 
 ## Pre-built binaries
 
@@ -14,11 +19,13 @@ This U-Boot build uses pre-built `TPL` binaries provided by Rockchip from [rkbin
 
 ## Known issues
 
-- HDMI output is not working.
-- Booting from a m.2 SATA drive is not working (NVMe is working).
-- Network does not work on Orange Pi 5 Plus.
+These were observed on **older** U-Boot releases and may no longer apply — the repo now tracks the latest mainline U-Boot, where rk3588 support has improved considerably. Please verify against the current release and report what you find.
 
-Don't hesitate to open a Github issue if you encounter any other issue.
+- HDMI output may not work from within U-Boot (the booted OS drives HDMI normally).
+- Booting from an m.2 SATA drive may not work (NVMe works).
+- Network may not work from within U-Boot on the Orange Pi 5 Plus.
+
+Don't hesitate to open a GitHub issue if you encounter any other issue.
 
 ## Install
 
@@ -34,7 +41,15 @@ wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-bo
 
 # Orange Pi 5 Plus
 wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-plus-spi.bin
+
+# Orange Pi 5 Max
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-max-spi.bin
+
+# Orange Pi 5 Ultra
+wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-ultra-spi.bin
 ```
+
+You can verify a download against the `SHA256SUMS` file attached to the release (`sha256sum -c SHA256SUMS`), and a CycloneDX SBOM (`sbom.cdx.json`) lists every component baked in. See [Verify the binaries](#verify-the-binaries) for signature verification.
 
 > [!NOTE]
 > An **experimental `-optee` variant** is published next to each board (e.g. `u-boot-orangepi5-optee-spi.bin`). It bundles the OP-TEE secure world (BL32, built from [OP-TEE OS](https://github.com/OP-TEE/optee_os)) for TrustZone-based features. The standard binary above is recommended; only use the `-optee` build if you need OP-TEE, and test it on your board first.
@@ -59,6 +74,13 @@ dd if=u-boot-orangepi5-plus-spi.bin of=/dev/mtdblock0 bs=512k status=progress &&
 ```
 
 Reboot the board, _et voilà_!
+
+## Recovery (unbrick)
+
+Flashing U-Boot to the SPI is recoverable — the board still boots from an SD card even with a bad SPI image.
+
+- **Re-flash or wipe the SPI:** boot the official (or Armbian) image from an SD card and repeat the steps above, or wipe the SPI with `dd if=/dev/zero of=/dev/mtdblock0 ...` and write a known-good binary.
+- **If the board won't boot at all:** put it into **MaskROM mode** and re-flash with [`rkdeveloptool`](https://github.com/rockchip-linux/rkdeveloptool) (or Rockchip's RKDevTool on Windows). See the [Orange Pi official wiki](http://www.orangepi.org/orangepiwiki/index.php/Orange_Pi_5) and the community [Armbian "Maskrom / erase SPI" guide](https://forum.armbian.com/topic/26418-maskrom-erase-spi/).
 
 ## Verify the binaries
 
