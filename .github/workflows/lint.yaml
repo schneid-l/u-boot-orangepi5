@@ -31,12 +31,12 @@ jobs:
           persist-credentials: false
 
       - name: actionlint
-        uses: reviewdog/action-actionlint@6fb7acc99f4a1008869fa8a0f09cfca740837d9d # v1.72.0
-        with:
-          reporter: local
-          fail_level: error
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint -color
 
       - name: hadolint
+        if: ${{ !cancelled() }}
         uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: Dockerfile
@@ -44,6 +44,7 @@ jobs:
           failure-threshold: error
 
       - name: Validate Renovate config
+        if: ${{ !cancelled() }}
         uses: suzuki-shunsuke/github-action-renovate-config-validator@ee9f69e1f683ed0d08225086482b34fc9abe9300 # v2.1.0
         with:
           config_file_path: .github/renovate.json5
