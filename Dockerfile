@@ -26,6 +26,10 @@ FROM ubuntu:26.04@sha256:f3d28607ddd78734bb7f71f117f3c6706c666b8b76cbff7c9ff6e57
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Fail a stage if any command in a pipe fails (e.g. a curl error feeding tar),
+# not just the last one. Inherited by every stage built FROM base.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # Minimal toolchain to build U-Boot + binman for rk3588. Anything only needed
 # by U-Boot's docs/test suite (sphinx, pytest, coccinelle, sdl2, ...) is left
 # out on purpose to keep the image small and the build fast.
@@ -156,8 +160,9 @@ RUN --mount=type=cache,target=/u-boot/build \
     mkdir -p out && \
     cp build/u-boot-rockchip-spi.bin "out/${NAME}.bin" && \
     if [ -f /optee/tee.elf ]; then optee="${OPTEE_VERSION}"; else optee="none"; fi && \
-    printf '{\n  "board": "%s",\n  "u_boot_version": "%s",\n  "atf_version": "%s",\n  "rkbin_ref": "%s",\n  "rkbin_ddr_version": "v%s",\n  "optee_version": "%s",\n  "source_date_epoch": "%s"\n}\n' \
-      "${BOARD}" "${U_BOOT_VERSION}" "${ATF_VERSION}" "${RKBIN_REF}" "$(cat /rkbin/ddr.version)" "${optee}" "${SOURCE_DATE_EPOCH}" \
+    ubuntu="$(. /etc/os-release && echo "${VERSION_ID}")" && \
+    printf '{\n  "board": "%s",\n  "u_boot_version": "%s",\n  "atf_version": "%s",\n  "rkbin_ref": "%s",\n  "rkbin_ddr_version": "v%s",\n  "optee_version": "%s",\n  "ubuntu_version": "%s",\n  "source_date_epoch": "%s"\n}\n' \
+      "${BOARD}" "${U_BOOT_VERSION}" "${ATF_VERSION}" "${RKBIN_REF}" "$(cat /rkbin/ddr.version)" "${optee}" "${ubuntu}" "${SOURCE_DATE_EPOCH}" \
       > "out/${NAME}.manifest.json"
 
 # ---------------------------------------------------------------------------

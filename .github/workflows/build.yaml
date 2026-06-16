@@ -50,6 +50,12 @@ jobs:
           - title: Orange Pi 5 Plus
             name: orangepi5-plus
             defconfig: orangepi-5-plus-rk3588
+          - title: Orange Pi 5 Max
+            name: orangepi5-max
+            defconfig: orangepi-5-max-rk3588
+          - title: Orange Pi 5 Ultra
+            name: orangepi5-ultra
+            defconfig: orangepi-5-ultra-rk3588
         variant:
           - title: ""
             suffix: ""
@@ -60,6 +66,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
@@ -111,7 +119,8 @@ jobs:
       - ubicloud-standard-2-arm
     permissions:
       contents: write # create / update the GitHub Release
-      id-token: write # cosign keyless signing (Sigstore OIDC)
+      id-token: write # cosign keyless signing + SBOM attestation (Sigstore OIDC)
+      attestations: write # SBOM attestation
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -136,6 +145,7 @@ jobs:
             echo "rkbin_ddr=$(jq -r '.rkbin_ddr_version' "$manifest")"
             echo "rkbin_ref=$(jq -r '.rkbin_ref' "$manifest")"
             echo "optee=$(jq -rs 'map(.optee_version) | map(select(. != "none")) | (.[0] // "none")' artifacts/*.manifest.json)"
+            echo "ubuntu=$(jq -r '.ubuntu_version' "$manifest")"
           } >> "$GITHUB_OUTPUT"
           echo "Releasing U-Boot $uboot"
 
@@ -148,6 +158,39 @@ jobs:
             cosign sign-blob --yes --bundle "${f}.cosign.bundle" "$f"
           done
 
+      - name: Generate checksums and SBOM
+        env:
+          UBOOT: ${{ steps.meta.outputs.uboot }}
+          ATF: ${{ steps.meta.outputs.atf }}
+          OPTEE: ${{ steps.meta.outputs.optee }}
+          DDR: ${{ steps.meta.outputs.rkbin_ddr }}
+          UBUNTU: ${{ steps.meta.outputs.ubuntu }}
+        run: |
+          ( cd artifacts && sha256sum -- *.bin > SHA256SUMS )
+          jq -n \
+            --arg uboot "$UBOOT" --arg atf "$ATF" --arg optee "$OPTEE" \
+            --arg ddr "$DDR" --arg ubuntu "$UBUNTU" \
+            '{
+              bomFormat: "CycloneDX",
+              specVersion: "1.5",
+              version: 1,
+              metadata: { component: { type: "firmware", name: "u-boot-orangepi5", version: $uboot } },
+              components: [
+                { type: "firmware", name: "u-boot", version: $uboot, purl: ("pkg:github/u-boot/u-boot@" + $uboot) },
+                { type: "firmware", name: "arm-trusted-firmware", version: $atf, purl: ("pkg:github/ARM-software/arm-trusted-firmware@" + $atf) },
+                { type: "firmware", name: "optee_os", version: $optee, purl: ("pkg:github/OP-TEE/optee_os@" + $optee) },
+                { type: "firmware", name: "rkbin-ddr-blob", version: $ddr },
+                { type: "operating-system", name: "ubuntu", version: $ubuntu }
+              ]
+            }' > artifacts/sbom.cdx.json
+          cat artifacts/SHA256SUMS
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: artifacts/*.bin
+          sbom-path: artifacts/sbom.cdx.json
+
       - name: Create / update release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
@@ -159,7 +202,9 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            Pre-built SPI U-Boot for the Orange Pi 5 / 5B / 5 Plus.
+            Pre-built SPI U-Boot for the Orange Pi 5 / 5B / 5 Plus / Max / Ultra.
+
+            `SHA256SUMS` (checksums) and `sbom.cdx.json` (CycloneDX SBOM, also attested) are attached.
 
             | Component | Version |
             | --------- | ------- |
@@ -193,3 +238,5 @@ jobs:
             artifacts/*.bin
             artifacts/*.manifest.json
             artifacts/*.cosign.bundle
+            artifacts/SHA256SUMS
+            artifacts/sbom.cdx.json
