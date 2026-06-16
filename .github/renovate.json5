@@ -22,7 +22,7 @@
     {
       customType: 'regex',
       description: 'U-Boot and ATF release tags pinned as Dockerfile ARGs',
-      fileMatch: ['(^|/)Dockerfile$'],
+      managerFilePatterns: ['/(^|/)Dockerfile$/'],
       matchStrings: [
         '# renovate: datasource=(?<datasource>github-tags) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) versioning=(?<versioning>[a-z-]+)\\s+ARG \\w+_VERSION=(?<currentValue>\\S+)',
       ],
@@ -30,7 +30,7 @@
     {
       customType: 'regex',
       description: 'rkbin commit pin (upstream has no tags, so master is pinned by digest)',
-      fileMatch: ['(^|/)Dockerfile$'],
+      managerFilePatterns: ['/(^|/)Dockerfile$/'],
       matchStrings: [
         '# renovate: datasource=(?<datasource>git-refs) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) currentValue=(?<currentValue>\\S+)\\s+ARG \\w+_REF=(?<currentDigest>\\S+)',
       ],
