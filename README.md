@@ -36,6 +36,9 @@ wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-bo
 wget https://github.com/schneid-l/u-boot-orangepi5/releases/latest/download/u-boot-orangepi5-plus-spi.bin
 ```
 
+> [!NOTE]
+> An **experimental `-optee` variant** is published next to each board (e.g. `u-boot-orangepi5-optee-spi.bin`). It bundles the OP-TEE secure world (BL32, built from [OP-TEE OS](https://github.com/OP-TEE/optee_os)) for TrustZone-based features. The standard binary above is recommended; only use the `-optee` build if you need OP-TEE, and test it on your board first.
+
 We will assume that the SPI flash chip is `/dev/mtdblock0` (you can check this by using `lsblk`).
 
 Reset the SPI flash:
@@ -111,6 +114,8 @@ Available build args:
 - `U_BOOT_VERSION`: the U-Boot release tag to build (default: latest stable, kept up to date by Renovate)
 - `ATF_VERSION`: the ARM Trusted Firmware release tag (default: latest stable, kept up to date by Renovate)
 - `RKBIN_REF`: the rkbin commit to pull the Rockchip DDR/TPL blob from (default: a pinned `master` commit, kept up to date by Renovate)
+- `OPTEE`: set to `on` to build and bundle the OP-TEE secure world (BL32); `off` by default
+- `OPTEE_VERSION`: the [OP-TEE OS](https://github.com/OP-TEE/optee_os) release to build when `OPTEE=on` (default: latest stable, kept up to date by Renovate)
 - `DEFCONFIG`: the U-Boot defconfig to use (`_defconfig` is automatically appended, default: `orangepi-5-rk3588s`)
 - `BOARD`: the board name, used in the output filename (default: `orangepi5`)
 - `NAME`: the binary output name (default: `u-boot-${BOARD}-spi`)

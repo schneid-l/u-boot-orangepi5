@@ -39,9 +39,9 @@
 
   packageRules: [
     {
-      // Never build pre-releases (-rc) of U-Boot or ATF.
+      // Never build pre-releases (-rc) of U-Boot, ATF or OP-TEE.
       matchManagers: ['custom.regex'],
-      matchDepNames: ['u-boot', 'arm-trusted-firmware'],
+      matchDepNames: ['u-boot', 'arm-trusted-firmware', 'optee_os'],
       allowedVersions: '!/-rc/',
     },
   ],

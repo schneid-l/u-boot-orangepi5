@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build ${{ matrix.board.title }}
+    name: Build ${{ matrix.board.title }}${{ matrix.variant.title }}
     # Only spend runner minutes on trusted PRs: Renovate, the repo owner, or a
     # PR explicitly labelled "build". Pushes to main and manual runs always build.
     if: >-
@@ -50,6 +50,13 @@ jobs:
           - title: Orange Pi 5 Plus
             name: orangepi5-plus
             defconfig: orangepi-5-plus-rk3588
+        variant:
+          - title: ""
+            suffix: ""
+            optee: "off"
+          - title: " + OP-TEE"
+            suffix: "-optee"
+            optee: "on"
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -67,19 +74,21 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build ${{ matrix.board.title }}
+      - name: Build ${{ matrix.board.title }}${{ matrix.variant.title }}
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/arm64
           outputs: type=local,dest=./out
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }}
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }},mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,ignore-error=true
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }}-${{ matrix.variant.optee }}
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/buildcache:${{ matrix.board.name }}-${{ matrix.variant.optee }},mode=max,image-manifest=true,oci-mediatypes=true,compression=zstd,ignore-error=true
           build-args: |
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
             BOARD=${{ matrix.board.name }}
             DEFCONFIG=${{ matrix.board.defconfig }}
+            NAME=u-boot-${{ matrix.board.name }}${{ matrix.variant.suffix }}-spi
+            OPTEE=${{ matrix.variant.optee }}
 
       - name: Attest build provenance
         if: github.event_name != 'pull_request'
@@ -90,7 +99,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: u-boot-${{ matrix.board.name }}
+          name: u-boot-${{ matrix.board.name }}${{ matrix.variant.suffix }}
           path: ./out/*
           if-no-files-found: error
 
@@ -126,6 +135,7 @@ jobs:
             echo "atf=$(jq -r '.atf_version' "$manifest")"
             echo "rkbin_ddr=$(jq -r '.rkbin_ddr_version' "$manifest")"
             echo "rkbin_ref=$(jq -r '.rkbin_ref' "$manifest")"
+            echo "optee=$(jq -rs 'map(.optee_version) | map(select(. != "none")) | (.[0] // "none")' artifacts/*.manifest.json)"
           } >> "$GITHUB_OUTPUT"
           echo "Releasing U-Boot $uboot"
 
@@ -157,6 +167,12 @@ jobs:
             | Arm Trusted Firmware (BL31) | ${{ steps.meta.outputs.atf }} |
             | Rockchip DDR blob (rkbin)   | ${{ steps.meta.outputs.rkbin_ddr }} |
             | rkbin commit | `${{ steps.meta.outputs.rkbin_ref }}` |
+            | OP-TEE (BL32, `-optee` variant only) | ${{ steps.meta.outputs.optee }} |
+
+            Two variants are published per board:
+
+            - `u-boot-<board>-spi.bin` — standard build (recommended).
+            - `u-boot-<board>-optee-spi.bin` — adds the OP-TEE secure world (BL32). Experimental: please test on your board before relying on it.
 
             **Verify a binary**
 
