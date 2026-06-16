@@ -1,0 +1,6 @@
+# hadolint configuration — https://github.com/hadolint/hadolint
+ignored:
+  - DL3008 # apt package versions are intentionally unpinned (Renovate doesn't manage them; the base image is digest-pinned instead)
+  - DL3006 # `FROM tee-${OPTEE}` selects a build stage, not an untagged registry image
+  - SC2010 # the rkbin/OP-TEE blob filenames are controlled, so `ls | grep` is safe here
+  - DL4006 # pipefail IS set via SHELL in the base stage and inherited by every child stage (verified); hadolint doesn't model cross-stage SHELL inheritance

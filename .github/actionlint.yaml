@@ -1,0 +1,6 @@
+# actionlint configuration — register the self-hosted Ubicloud runner labels
+# so they are not reported as unknown.
+self-hosted-runner:
+  labels:
+    - ubicloud-standard-16-arm
+    - ubicloud-standard-2-arm
