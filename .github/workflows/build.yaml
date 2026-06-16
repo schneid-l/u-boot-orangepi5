@@ -119,8 +119,7 @@ jobs:
       - ubicloud-standard-2-arm
     permissions:
       contents: write # create / update the GitHub Release
-      id-token: write # cosign keyless signing + SBOM attestation (Sigstore OIDC)
-      attestations: write # SBOM attestation
+      id-token: write # cosign keyless signing (Sigstore OIDC)
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -185,12 +184,6 @@ jobs:
             }' > artifacts/sbom.cdx.json
           cat artifacts/SHA256SUMS
 
-      - name: Attest SBOM
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
-        with:
-          subject-path: artifacts/*.bin
-          sbom-path: artifacts/sbom.cdx.json
-
       - name: Create / update release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
@@ -204,7 +197,7 @@ jobs:
           body: |
             Pre-built SPI U-Boot for the Orange Pi 5 / 5B / 5 Plus / Max / Ultra.
 
-            `SHA256SUMS` (checksums) and `sbom.cdx.json` (CycloneDX SBOM, also attested) are attached.
+            `SHA256SUMS` (checksums) and `sbom.cdx.json` (CycloneDX SBOM) are attached. Each binary also carries a SLSA build-provenance attestation and a cosign signature.
 
             | Component | Version |
             | --------- | ------- |
